@@ -13,7 +13,10 @@ class Data:
             self._clean_data()
         self.preprocess_data()
         
-        self._add_minuite_of_the_year()
+        self._add_minute_of_the_day()
+        self._add_minute_of_the_year()
+        self._add_minute_of_the_week()
+
         self.train_data, self.val_data = train_test_split(self.data, test_size=0.2, shuffle=shuffle)
         
         self.sample_submission = pd.read_csv(ds_path+"sample_submission.csv")
@@ -22,7 +25,15 @@ class Data:
     def k_fold(self, n_splits = 5):
         return KFold(n_splits, shuffle=True, random_state = self.seed)
     
-    def _add_minuite_of_the_year(self,):
+    def _add_minute_of_the_day(self,):
+        
+        self.data["sin_MOD"] = self.data.date.apply(self.sin_MOD)
+        self.data["cos_MOD"] = self.data.date.apply(self.cos_MOD)
+
+        self.test_data["sin_MOD"] = self.test_data.date.apply(self.sin_MOD)
+        self.test_data["cos_MOD"] = self.test_data.date.apply(self.cos_MOD)
+
+    def _add_minute_of_the_year(self,):
         
         self.data["sin_MOY"] = self.data.date.apply(self.sin_MOY)
         self.data["cos_MOY"] = self.data.date.apply(self.cos_MOY)
@@ -30,24 +41,58 @@ class Data:
         self.test_data["sin_MOY"] = self.test_data.date.apply(self.sin_MOY)
         self.test_data["cos_MOY"] = self.test_data.date.apply(self.cos_MOY)
 
+    def _add_minute_of_the_week(self,):
+
+        self.data["sin_MOW"] = self.data.date.apply(self.sin_MOW)
+        self.data["cos_MOW"] = self.data.date.apply(self.cos_MOW)
+
+        self.test_data["sin_MOW"] = self.test_data.date.apply(self.sin_MOW)
+        self.test_data["cos_MOW"] = self.test_data.date.apply(self.cos_MOW)
+
         return None
+
+    def sin_MOD(self, x):
+        min_x = self._min_encoding_day(x)
+        sin_day = np.sin(min_x)
+        
+        return sin_day
+    
+    def cos_MOD(self, x):
+        
+        min_x = self._min_encoding_day(x)
+        cos_day = np.cos(min_x)
+
+        return cos_day
+    
+    def sin_MOW(self, x):
+        min_x = self._min_encoding_week(x)
+        sin_day = np.sin(min_x)
+        
+        return sin_day
+    
+    def cos_MOW(self, x):
+        
+        min_x = self._min_encoding_week(x)
+        cos_day = np.cos(min_x)
+
+        return cos_day
 
     def sin_MOY(self, x):
         
-        min_x = self._min_encoding(x)
+        min_x = self._min_encoding_year(x)
         sin_day = np.sin(min_x)
         
         return sin_day
 
     def cos_MOY(self, x):
         
-        min_x = self._min_encoding(x)
+        min_x = self._min_encoding_year(x)
         cos_day = np.cos(min_x)
 
         return cos_day
 
 
-    def _min_encoding(self, x):
+    def _min_encoding_year(self, x):
         
         day = x.timetuple().tm_yday 
         min_of_the_year = 24*60*day + 60*x.hour + x.minute
@@ -55,6 +100,22 @@ class Data:
 
         return (min_of_the_year*2*np.pi)/max_min
 
+    def _min_encoding_week(self, x):
+        
+        day = x.timetuple().tm_wday
+        min_of_the_year = 24*60*day + 60*x.hour + x.minute
+        max_min = 6*24*60
+
+        return (min_of_the_year*2*np.pi)/max_min
+    
+    def _min_encoding_day(self, x):
+        
+        min_of_the_day =  60*x.hour + x.minute
+        max_min = 24*60
+
+        return (min_of_the_day*2*np.pi)/max_min
+    
+    
     def _str_to_datetime(self, x):
         x = datetime.strptime(x, "%Y-%m-%d %H:%M:%S")
         return x
@@ -83,7 +144,7 @@ class Data:
         self.data["j_day"] = self.data.date.apply(self._to_julian_day)
 
         self.test_data.date = self.test_data.date.apply(self._str_to_datetime)
-        self.test_data["j_date"] = self.test_data.date.apply(self._to_julian_day)
+        self.test_data["j_day"] = self.test_data.date.apply(self._to_julian_day)
 
     def _clean_data(self):
         index = np.where(self.data["feature_CB"] == 0)[0]
