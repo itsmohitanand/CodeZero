@@ -5,12 +5,14 @@ from datetime import datetime
 import numpy as np
 
 class Data:
-    def __init__(self, ds_path = "data/"):
+    def __init__(self, ds_path = "data/", clean=False):
         shuffle=False # This is important to predict out of time 
         self.data = pd.read_csv(ds_path+"train.csv")
         self.test_data = pd.read_csv(ds_path+"test.csv")
-        self.data.date = self.data.date.apply(self._str_to_datetime)
-        self.test_data.date = self.test_data.date.apply(self._str_to_datetime)
+        if clean:
+            self._clean_data()
+        self.preprocess_data()
+        
         self._add_minuite_of_the_year()
         self.train_data, self.val_data = train_test_split(self.data, test_size=0.2, shuffle=shuffle)
         
@@ -57,6 +59,11 @@ class Data:
         x = datetime.strptime(x, "%Y-%m-%d %H:%M:%S")
         return x
     
+    def _to_julian_day(self, x):
+
+        return x.to_julian_date()
+        
+
     def generate_submission(self, proba_preds):
         assert proba_preds.shape==(1000, 5360)
 
@@ -69,3 +76,17 @@ class Data:
         submission_df.head(2)
 
         return submission_df
+
+    def preprocess_data(self, ):
+
+        self.data.date = self.data.date.apply(self._str_to_datetime)
+        self.data["j_day"] = self.data.date.apply(self._to_julian_day)
+
+        self.test_data.date = self.test_data.date.apply(self._str_to_datetime)
+        self.test_data["j_date"] = self.test_data.date.apply(self._to_julian_day)
+
+    def _clean_data(self):
+        index = np.where(self.data["feature_CB"] == 0)[0]
+        init_samples = self.data.shape[0]
+        self.data = self.data.drop(index, axis="index")
+        print(F"Sample size changed from {init_samples} to {self.data.shape[0]}")
