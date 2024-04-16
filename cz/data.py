@@ -3,13 +3,13 @@ from sklearn.preprocessing import PolynomialFeatures
 
 
 class Preprocess:
-    def __init__(self, train_data, val_data, test_data, deg_seasonality_year=2, deg_seasonality_week=2, deg_trend=2):
+    def __init__(self, train_data, val_data, test_data, deg_seasonality_year=2, deg_seasonality_week=2, deg_seasonality_day=2, deg_trend=2):
         self.train_data = train_data
         self.val_data = val_data
         self.test_data = test_data
         self.add_seasonality_year_col(deg=deg_seasonality_year)
         self.add_seasonality_week_col(deg=deg_seasonality_week)
-        self.add_seasonality_day_col(deg=deg_seasonality_year)
+        self.add_seasonality_day_col(deg=deg_seasonality_day)
 
 
         self.add_trend_col(deg=deg_trend)
@@ -44,7 +44,7 @@ class Preprocess:
         # We want are trend model to be more flexible
 
         x = self.train_data.filter(["j_day"]).values
-        y = (self.train_data.Temperature - self.train_data.seasonality_year).values
+        y = (self.train_data.Temperature - self.train_data.seasonality_year - self.train_data.seasonality_week - self.train_data.seasonality_day).values
 
         reg = LinearRegression().fit(poly.fit_transform(x), y)
         
